@@ -1,6 +1,5 @@
-import os
 import logging
-from contextvars import ContextVar
+import os
 
 import click
 from purepythonmilter import (
@@ -14,34 +13,14 @@ from redis.asyncio.client import Redis
 
 logger: logging.LoggerAdapter[logging.Logger]  # assigned below
 
-message_store: ContextVar[str] = ContextVar("message_store", default="")
-premium_domain: ContextVar[bool] = ContextVar("premium_domain", default=False)
-
 redis = Redis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
-
-
-def message_append(message: str) -> None:
-    message_store.set(message_store.get() + message)
-
-
-def raw_header_to_str(raw_header: bytes) -> str:
-    result = ""
-    separator = ": "
-    for i, byte in enumerate(raw_header):
-        if byte == 0:
-            result += separator
-            if separator == ": ":  # first 0
-                separator = "\n"
-        else:
-            result += chr(byte)
-    return result
 
 
 async def on_rcpt_to(cmd: RcptTo) -> None:
     if await redis.sismember("blocked_emails", cmd.address.lower()):
         logger.info(f"Milter blocked email: {cmd.address}")
-        message_store.set("")
         return DiscardMessage()
+
 
 milter = PurePythonMilter(
     name="change_body",
@@ -63,8 +42,7 @@ logger = milter.logger
 @click.option("--bind-port", default=DEFAULT_LISTENING_TCP_PORT, show_envvar=True)
 @click.option(
     "--log-level",
-    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"],
-                      case_sensitive=False),
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
     show_envvar=True,
 )
