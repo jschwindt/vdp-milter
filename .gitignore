@@ -1,0 +1,7 @@
+.venv
+test.py
+__pycache__
+.env
+# local env files
+.env*.local
+data.txt

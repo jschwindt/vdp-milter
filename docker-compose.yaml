@@ -1,0 +1,25 @@
+services:
+  postfix-relay:
+    image: mwader/postfix-relay:latest
+    environment:
+    - POSTFIX_myhostname=example.com
+    - POSTFIX_smtp_sasl_auth_enable=yes
+    - POSTFIX_smtp_sasl_security_options=noanonymous
+    - POSTFIX_smtp_tls_security_level=encrypt
+    - POSTFIX_header_size_limit=4096000
+    - POSTFIX_smtp_sasl_password_maps=hash:/etc/postfix/smtp_sasl_password_maps
+    - POSTMAP_smtp_sasl_password_maps=[email-smtp.us-east-1.amazonaws.com]:587 AKIAIYASK4XARQMZOBQA:BOVZOgiTn1KsV4eRkCcSJu6ylsrr1o8EcQvTeqL9FTef
+    - POSTFIX_transport_maps=hash:/etc/postfix/transport_maps
+    - POSTFIX_smtpd_milters=inet:milter:9000
+    - POSTMAP_transport_maps=* relay:[email-smtp.us-east-1.amazonaws.com]:587
+    - POSTFIXMASTER_submission__inet=submission inet n - y - - smtpd
+    ports:
+      - 25:25
+
+  milter:
+    build: .
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - 6379:6379

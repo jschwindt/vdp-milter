@@ -1,0 +1,55 @@
+name: Build & Deploy App
+
+on:
+  push:
+    branches:
+      - prod
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: vdp-milter
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: benjlevesque/short-sha@v2.2
+        id: short-sha
+      - run: echo $SHA
+        env:
+          SHA: ${{ steps.short-sha.outputs.sha }}
+      - run: echo $SHA
+        env:
+          SHA: ${{ env.SHA }}
+
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build the Docker image
+        run: docker build --platform linux/amd64
+          -t $IMAGE_NAME:$SHA
+          -t $IMAGE_NAME:latest
+          -t ${{ vars.REGISTRY }}/$IMAGE_NAME:$SHA
+          -t ${{ vars.REGISTRY }}/$IMAGE_NAME:latest
+          .
+
+      - name: Push image to Registry
+        run: docker push -a ${{ vars.REGISTRY }}/$IMAGE_NAME
+
+      - name: Restart server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script_stop: true
+          script: cd /home/jschwindt/sns-notif && docker compose pull && docker compose up -d
