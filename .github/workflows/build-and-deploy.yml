@@ -52,4 +52,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script_stop: true
-          script: cd /home/jschwindt/sns-notif && ls -l # docker compose pull && docker compose up -d
+          script: cd /home/jschwindt/sns-notif && docker compose pull && docker compose up -d
